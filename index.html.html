@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TicketDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14; --surface:#151820; --surface2:#1c2030; --border:#252a3a;
+    --accent:#f0a500; --green:#2dce89; --blue:#4a9eff; --purple:#a78bfa;
+    --red:#ff5a5a; --text:#e8eaf0; --text2:#7a8099;
+    --aperto:#4a9eff; --attesa:#f0a500; --rimborso:#a78bfa; --chiuso:#ff5a5a; --risolto:#2dce89;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* LOGIN */
+  #loginScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:420px;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);}
+  .login-logo{font-size:28px;font-weight:800;margin-bottom:6px;} .login-logo span{color:var(--accent);}
+  .login-sub{color:var(--text2);font-size:13px;margin-bottom:28px;}
+  .login-tabs{display:flex;margin-bottom:22px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .login-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:var(--text2);transition:all .2s;}
+  .login-tab.active{background:var(--accent);color:#000;}
+  .login-form{display:flex;flex-direction:column;gap:12px;}
+  .login-form input,.login-form select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:11px 13px;border-radius:9px;font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s;width:100%;}
+  .login-form input:focus,.login-form select:focus{border-color:var(--accent);}
+  .login-btn{background:var(--accent);color:#000;border:none;padding:13px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;margin-top:4px;}
+  .login-btn:hover{background:#ffc030;transform:translateY(-1px);}
+  .login-err{color:var(--red);font-size:12px;text-align:center;min-height:16px;font-family:'DM Mono',monospace;}
+
+  /* HEADER */
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:100;}
+  .logo{font-size:20px;font-weight:800;letter-spacing:-.5px;} .logo span{color:var(--accent);}
+  .header-right{display:flex;gap:8px;align-items:center;}
+  .user-chip{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 11px;font-size:12px;font-family:'DM Mono',monospace;}
+  .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+
+  /* STATS */
+  .stats-bar{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
+  .stat-card{flex:1;background:var(--surface);padding:13px 18px;display:flex;align-items:center;gap:10px;transition:background .2s;}
+  .stat-card:hover{background:var(--surface2);}
+  .stat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .stat-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+  .stat-value{font-size:21px;font-weight:800;line-height:1.1;font-family:'DM Mono',monospace;}
+
+  /* TOOLBAR */
+  .toolbar-wrapper{background:var(--surface);border-bottom:1px solid var(--border);}
+  .toolbar-row{padding:10px 28px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .toolbar-row.has-border{border-top:1px solid var(--border);padding-top:8px;padding-bottom:12px;}
+  .filter-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);white-space:nowrap;}
+  .filter-group{display:flex;gap:5px;flex-wrap:wrap;}
+  .filter-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;}
+  .filter-btn:hover{border-color:var(--accent);color:var(--text);}
+  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#000;}
+  .filter-btn.store-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .search-box{position:relative;flex:1;min-width:180px;}
+  .search-box input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px 8px 33px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;}
+  .search-box input:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:14px;}
+
+  /* BUTTONS */
+  .btn{padding:7px 14px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+  .btn-primary{background:var(--accent);color:#000;} .btn-primary:hover{background:#ffc030;transform:translateY(-1px);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);} .btn-secondary:hover{border-color:var(--accent);}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-forward{background:rgba(74,158,255,.12);color:var(--blue);border:1px solid rgba(74,158,255,.25);} .btn-forward:hover{background:rgba(74,158,255,.22);}
+  .btn-sm{padding:4px 8px;font-size:10px;border-radius:6px;}
+
+  /* TABLE */
+  .table-container{padding:18px 28px;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead th{text-align:left;padding:8px 11px;color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .15s;animation:rowIn .25s ease forwards;}
+  @keyframes rowIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+  tbody tr:hover{background:var(--surface2);}
+  tbody td{padding:10px 11px;vertical-align:middle;font-family:'DM Mono',monospace;font-size:11px;}
+  .ticket-num{font-weight:500;color:var(--accent);font-size:12px;}
+  .client-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;}
+  .text-cell{font-family:'Syne',sans-serif;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-family:'Syne',sans-serif;white-space:nowrap;}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .badge-APERTO{background:rgba(74,158,255,.15);color:var(--aperto);}
+  .badge-INATTESA{background:rgba(240,165,0,.15);color:var(--attesa);}
+  .badge-RIMBORSO{background:rgba(167,139,250,.15);color:var(--rimborso);}
+  .badge-CHIUSO{background:rgba(255,90,90,.15);color:var(--chiuso);}
+  .badge-RISOLTO{background:rgba(45,206,137,.15);color:var(--risolto);}
+  .store-chip{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;}
+  .store-802{background:rgba(74,158,255,.15);color:var(--blue);}
+  .store-529{background:rgba(167,139,250,.15);color:var(--purple);}
+  .date-cell{color:var(--text2);font-size:10px;}
+  .sollecito-urgente{background:rgba(255,90,90,.2);color:var(--red);padding:2px 6px;border-radius:5px;}
+  .sollecito-oggi{background:rgba(240,165,0,.2);color:var(--attesa);padding:2px 6px;border-radius:5px;}
+  .sollecito-futuro{color:var(--text2);}
+  .actions-cell{display:flex;gap:4px;flex-wrap:wrap;}
+  .highlight-row{background:rgba(240,165,0,.04)!important;}
+  .urgent-row{background:rgba(255,90,90,.04)!important;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text2);}
+  .empty-state .icon{font-size:44px;margin-bottom:14px;opacity:.3;}
+  .today-banner{margin:0 28px 12px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:9px;padding:10px 15px;font-size:12px;color:var(--attesa);display:flex;align-items:center;gap:10px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  .modal-sm{max-width:460px;}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-size:17px;font-weight:800;}
+  .modal-close{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s;}
+  .modal-close:hover{color:var(--text);border-color:var(--accent);}
+  .modal-body{padding:20px 24px;}
+  .modal-footer{padding:12px 24px 20px;display:flex;justify-content:flex-end;gap:9px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);}
+  input[type=text],input[type=date],input[type=email],input[type=password],select,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 11px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;width:100%;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  select option{background:var(--surface);}
+  textarea{resize:vertical;min-height:62px;font-family:'Syne',sans-serif;font-size:12px;}
+  .form-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:3px 0;}
+  .section-tag{grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent);}
+  .info-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.6;}
+
+  /* NOTIFICHE */
+  .notif-container{position:fixed;top:74px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+  .notif{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:12px 15px;min-width:280px;max-width:330px;pointer-events:all;animation:notifIn .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+  .notif.urgente{border-left-color:var(--red);}
+  @keyframes notifIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+  .notif-title{font-weight:700;font-size:12px;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;}
+  .notif-body{font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;}
+  .notif-close-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;flex-shrink:0;}
+
+  /* SPINNER */
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* SYNC BADGE */
+  .sync-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;font-weight:600;}
+  .sync-ok{background:rgba(45,206,137,.15);color:var(--green);}
+  .sync-err{background:rgba(255,90,90,.15);color:var(--red);}
+  .sync-loading{background:rgba(240,165,0,.15);color:var(--attesa);}
+  /* ALARM MODAL */
+  .alarm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;}
+  .alarm-box{background:var(--surface);border:2px solid var(--accent);border-radius:20px;padding:36px 32px;width:100%;max-width:400px;text-align:center;position:relative;animation:alarmIn .4s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+  .alarm-box.urgente{border-color:var(--red);}
+  @keyframes alarmIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  .alarm-pulse{position:absolute;inset:0;border-radius:20px;animation:pulse 1s ease-in-out infinite;pointer-events:none;}
+  .alarm-pulse.normal{box-shadow:inset 0 0 0 0 rgba(240,165,0,.4);}
+  .alarm-pulse.urgente{box-shadow:inset 0 0 0 0 rgba(255,90,90,.4);}
+  @keyframes pulse{0%{box-shadow:inset 0 0 0 0 rgba(240,165,0,.3)}50%{box-shadow:inset 0 0 30px 0 rgba(240,165,0,.12)}100%{box-shadow:inset 0 0 0 0 rgba(240,165,0,.3)}}
+  @keyframes pulseRed{0%{box-shadow:inset 0 0 0 0 rgba(255,90,90,.3)}50%{box-shadow:inset 0 0 30px 0 rgba(255,90,90,.12)}100%{box-shadow:inset 0 0 0 0 rgba(255,90,90,.3)}}
+  .alarm-icon{font-size:52px;margin-bottom:12px;animation:bellRing 0.5s ease-in-out infinite alternate;}
+  @keyframes bellRing{from{transform:rotate(-15deg)}to{transform:rotate(15deg)}}
+  .alarm-title{font-size:20px;font-weight:800;margin-bottom:6px;}
+  .alarm-ticket{font-size:28px;font-weight:800;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:8px;}
+  .alarm-ticket.urgente{color:var(--red);}
+  .alarm-body{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.7;margin-bottom:24px;max-height:100px;overflow-y:auto;}
+  .alarm-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .alarm-btn{padding:11px 20px;font-size:13px;border-radius:10px;}
+  @media(max-width:768px){
+    header,.toolbar-row,.table-container{padding-left:14px;padding-right:14px;}
+    .form-grid{grid-template-columns:1fr;} .stats-bar{flex-wrap:wrap;} .stat-card{min-width:50%;}
+    .today-banner{margin:0 14px 10px;}
+    .alarm-actions{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">TICKET<span>DESK</span></div>
+    <div class="login-sub">Sistema di gestione ticket</div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="tabLogin" onclick="switchTab('login')">Accedi</div>
+      <div class="login-tab" id="tabReg" onclick="switchTab('reg')">Registrati</div>
+    </div>
+    <div id="panelLogin" class="login-form">
+      <input type="email" id="li_email" placeholder="Email" autocomplete="username">
+      <input type="password" id="li_pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="login-err" id="li_err"></div>
+      <button class="login-btn" onclick="doLogin()">Accedi →</button>
+    </div>
+    <div id="panelReg" class="login-form" style="display:none">
+      <input type="text" id="re_nome" placeholder="Nome e Cognome">
+      <input type="email" id="re_email" placeholder="Email (usata per inviare solleciti)">
+      <input type="password" id="re_pass" placeholder="Password (min. 4 caratteri)">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2)">Store di appartenenza</label>
+        <select id="re_store">
+          <option value="">— Nessuno —</option>
+          <option value="STORE 802">Store 802</option>
+          <option value="STORE 529">Store 529</option>
+        </select>
+      </div>
+      <div class="login-err" id="re_err"></div>
+      <button class="login-btn" onclick="doRegister()">Crea account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appShell" style="display:none">
+  <header>
+    <div class="logo">TICKET<span>DESK</span></div>
+    <div class="header-right">
+      <span class="sync-badge sync-ok" id="syncBadge" title="Stato sincronizzazione">☁ Sincronizzato</span>
+      <button class="btn btn-secondary" onclick="manualRefresh()" title="Ricarica dati dal cloud">↺</button>
+      <button class="btn btn-secondary" onclick="openEmailConfig()">⚙ Email</button>
+      <button class="btn btn-secondary" onclick="importCSV()">↑ Importa</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+      <button class="btn btn-primary" onclick="openTicketModal()">+ Nuovo Ticket</button>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userNameChip">—</span>
+        <button style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;margin-left:4px" onclick="doLogout()" title="Esci">⏏</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="stats-bar" id="statsBar"></div>
+  <div id="todayBanner" style="display:none"></div>
+
+  <div class="toolbar-wrapper">
+    <div class="toolbar-row">
+      <span class="filter-label">Store:</span>
+      <div class="filter-group">
+        <button class="filter-btn store-btn active" data-store="TUTTI" onclick="setStoreFilter('TUTTI',this)">Tutti</button>
+        <button class="filter-btn store-btn" data-store="STORE 802" onclick="setStoreFilter('STORE 802',this)">Store 802</button>
+        <button class="filter-btn store-btn" data-store="STORE 529" onclick="setStoreFilter('STORE 529',this)">Store 529</button>
+      </div>
+      <div style="flex:1"></div>
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="searchInput" placeholder="Cerca ticket, cliente, spedizione…" oninput="renderTable()">
+      </div>
+    </div>
+    <div class="toolbar-row has-border">
+      <span class="filter-label">Stato:</span>
+      <div class="filter-group">
+        <button class="filter-btn active" data-state="TUTTI" onclick="setStateFilter('TUTTI',this)">Tutti</button>
+        <button class="filter-btn" data-state="APERTO" onclick="setStateFilter('APERTO',this)">Aperto</button>
+        <button class="filter-btn" data-state="IN ATTESA" onclick="setStateFilter('IN ATTESA',this)">In Attesa</button>
+        <button class="filter-btn" data-state="RIMBORSO" onclick="setStateFilter('RIMBORSO',this)">Rimborso</button>
+        <button class="filter-btn" data-state="CHIUSO" onclick="setStateFilter('CHIUSO',this)">Chiuso</button>
+        <button class="filter-btn" data-state="RISOLTO" onclick="setStateFilter('RISOLTO',this)">Risolto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>N° Ticket</th>
+          <th>Cliente</th>
+          <th>Problematica</th>
+          <th>N° Spedizione</th>
+          <th>Store</th>
+          <th>Stato</th>
+          <th>Apertura</th>
+          <th>Sollecito</th>
+          <th>Orario</th>
+          <th>Chiusura</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="notif-container" id="notifContainer"></div>
+
+<!-- MODAL TICKET -->
+<div id="ticketModal" style="display:none">
+  <div class="modal-overlay" onclick="if(event.target===this)closeTicketModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="ticketModalTitle">Nuovo Ticket</div>
+        <button class="modal-close" onclick="closeTicketModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="section-tag">📋 Dati Ticket</div>
+          <div class="form-group">
+            <label>N° Ticket *</label>
+            <input type="text" id="f_numero" placeholder="es. TKT-0001">
+          </div>
+          <div class="form-group">
+            <label>N° Spedizione</label>
+            <input type="text" id="f_spedizione" placeholder="es. SP123456789IT">
+          </div>
+          <div class="form-group">
+            <label>Store</label>
+            <select id="f_store">
+              <option value="">— Nessuno —</option>
+              <option value="STORE 802">Store 802</option>
+              <option value="STORE 529">Store 529</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Stato</label>
+            <select id="f_stato">
+              <option value="APERTO">Aperto</option>
+              <option value="IN ATTESA">In Attesa</option>
+              <option value="RIMBORSO">Rimborso</option>
+              <option value="CHIUSO">Chiuso</option>
+              <option value="RISOLTO">Risolto</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Problematica *</label>
+            <textarea id="f_problema" placeholder="Descrivi il problema…"></textarea>
+          </div>
+          <hr class="form-divider">
+          <div class="section-tag">👤 Dati Cliente</div>
+          <div class="form-group">
+            <label>Nome Cliente</label>
+            <input type="text" id="f_nomeCliente" placeholder="Nome e Cognome">
+          </div>
+          <div class="form-group">
+            <label>Email Cliente</label>
+            <input type="email" id="f_emailCliente" placeholder="cliente@email.it">
+          </div>
+          <hr class="form-divider">
+          <div class="section-tag">📅 Date &amp; Notifiche</div>
+          <div class="form-group">
+            <label>Data Apertura</label>
+            <input type="date" id="f_dataApertura">
+          </div>
+          <div class="form-group">
+            <label>Data Sollecito (notifica)</label>
+            <input type="date" id="f_dataSollecito">
+          </div>
+          <div class="form-group">
+            <label>Orario Notifica &#128276; (pop-up &amp; email)</label>
+            <input type="time" id="f_oraSollecito">
+          </div>
+          <div class="form-group">
+            <label>Data Chiusura</label>
+            <input type="date" id="f_dataChiusura">
+          </div>
+          <div class="form-group">
+            <label>Email Notifica Sollecito</label>
+            <input type="email" id="f_email" placeholder="tuaemail@esempio.it">
+          </div>
+          <div class="form-group full">
+            <label>Note Chiusura Ticket</label>
+            <textarea id="f_noteChiusura" placeholder="Note di chiusura…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeTicketModal()">Annulla</button>
+        <button class="btn btn-primary" onclick="saveTicket()">Salva Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INOLTRA -->
+<div id="forwardModal" style="display:none">
+  <div class="modal-overlay" onclick="if(event.target===this)closeForwardModal()">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">✉ Inoltra Ticket</div>
+        <button class="modal-close" onclick="closeForwardModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div class="form-group">
+            <label>Destinatario (email) *</label>
+            <input type="email" id="fw_to" placeholder="destinatario@email.it">
+          </div>
+          <div class="form-group">
+            <label>Testo aggiuntivo (opzionale)</label>
+            <textarea id="fw_extra" placeholder="Aggiungi un messaggio personalizzato…" style="min-height:80px" oninput="updateForwardPreview()"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Oggetto email</label>
+            <input type="text" id="fw_subject_preview" readonly style="color:var(--text2);cursor:default">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);display:block;margin-bottom:5px">Anteprima corpo email</label>
+            <div class="info-box" id="fw_preview" style="max-height:170px;overflow-y:auto;white-space:pre-wrap;font-size:10px;line-height:1.7"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeForwardModal()">Annulla</button>
+        <button class="btn btn-primary" onclick="doForward()">📤 Apri nel client email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMAIL CONFIG -->
+<div id="emailModal" style="display:none">
+  <div class="modal-overlay" onclick="if(event.target===this)closeEmailConfig()">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">⚙ Impostazioni Email</div>
+        <button class="modal-close" onclick="closeEmailConfig()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div class="form-group">
+            <label>La tua email predefinita (mittente solleciti)</label>
+            <input type="email" id="globalEmail" placeholder="tuaemail@esempio.it">
+          </div>
+          <div class="info-box">
+            ℹ️ Questa email viene usata come indirizzo di notifica per i solleciti automatici.<br>
+            Puoi sovrascriverla per ogni singolo ticket.<br><br>
+            🔵 I pulsanti <strong>Inoltra</strong> e <strong>Sollecito</strong> aprono direttamente <strong>Gmail</strong> in una nuova scheda con tutti i campi precompilati. Assicurati di essere già loggato su Gmail nel browser.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeEmailConfig()">Annulla</button>
+        <button class="btn btn-primary" onclick="saveEmailConfig()">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALLARME -->
+<div id="alarmModal" style="display:none">
+  <div class="alarm-overlay">
+    <div class="alarm-box">
+      <div class="alarm-pulse"></div>
+      <div class="alarm-icon" id="alarmIcon">🔔</div>
+      <div class="alarm-title" id="alarmTitle">Sollecito Ticket</div>
+      <div class="alarm-ticket" id="alarmTicketNum"></div>
+      <div class="alarm-body" id="alarmBody"></div>
+      <div class="alarm-actions">
+        <button class="btn btn-danger alarm-btn" onclick="disattivaAllarme()">
+          🔕 Disattiva Allarme
+        </button>
+        <button class="btn btn-primary alarm-btn" onclick="reimpostaNotifica()">
+          🔁 Reimposta Notifica
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REIMPOSTA NOTIFICA -->
+<div id="reimpostaModal" style="display:none">
+  <div class="modal-overlay" onclick="if(event.target===this)document.getElementById('reimpostaModal').style.display='none'">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">🔁 Reimposta Notifica</div>
+        <button class="modal-close" onclick="document.getElementById('reimpostaModal').style.display='none'">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div class="info-box" id="reimpostaInfo"></div>
+          <div class="form-group">
+            <label>Nuova Data Sollecito</label>
+            <input type="date" id="re_data">
+          </div>
+          <div class="form-group">
+            <label>Nuovo Orario Notifica</label>
+            <input type="time" id="re_ora">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('reimpostaModal').style.display='none'">Annulla</button>
+        <button class="btn btn-primary" onclick="salvaReimposta()">✅ Salva e Riprogramma</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="csvImporter" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
+
+<script>
+// ── JSONBIN CONFIG ────────────────────────────────────────────────────────────
+const JB_KEY   = '$2a$10$KlE/G290BqqwI4mBs.m7guE9NJAB3P6GC.FctVDjw18j.tKxzdoSW';
+const JB_TICKETS = '699ed4f1d0ea881f40d7cd0d';
+const JB_USERS   = '699ed4f8d0ea881f40d7cd21';
+const JB_BASE    = 'https://api.jsonbin.io/v3/b';
+const EMAIL_KEY  = 'ticketdesk_v3_email';
+const SESSION_KEY= 'ticketdesk_v3_session';
+
+let tickets=[], users=[], currentUser=null, editIndex=-1,
+    currentStateFilter='TUTTI', currentStoreFilter='TUTTI', forwardTicketIdx=-1;
+
+// ── JSONBIN HELPERS ───────────────────────────────────────────────────────────
+async function jbGet(binId){
+  const r=await fetch(`${JB_BASE}/${binId}/latest`,{headers:{'X-Master-Key':JB_KEY,'X-Bin-Meta':'false'}});
+  return r.json();
+}
+async function jbPut(binId,data){
+  await fetch(`${JB_BASE}/${binId}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JB_KEY},body:JSON.stringify(data)});
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload=async()=>{
+  showLoading(true);
+  await loadAll();
+  showLoading(false);
+  const sess=localStorage.getItem(SESSION_KEY);
+  if(sess){ const u=users.find(u=>u.email===sess); if(u){currentUser=u;showApp();return;} }
+  document.getElementById('loginScreen').style.display='flex';
+};
+
+function showLoading(on){
+  let el=document.getElementById('loadingOverlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='loadingOverlay';
+    el.style.cssText='position:fixed;inset:0;background:#0d0f14;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Syne,sans-serif;';
+    el.innerHTML='<div style="font-size:28px;font-weight:800;color:#e8eaf0">TICKET<span style="color:#f0a500">DESK</span></div><div style="color:#7a8099;font-size:13px;font-family:DM Mono,monospace" id="loadingMsg">Connessione al database...</div><div class="spinner"></div>';
+    document.body.appendChild(el);
+  }
+  el.style.display=on?'flex':'none';
+}
+
+async function loadAll(){
+  try{
+    const td=await jbGet(JB_TICKETS); tickets=td.tickets||[];
+  }catch(e){ tickets=[]; console.warn('Tickets load error',e); }
+  try{
+    const ud=await jbGet(JB_USERS); users=ud.users||[];
+  }catch(e){ users=[]; console.warn('Users load error',e); }
+}
+
+async function saveTickets(){
+  setSyncBadge('loading','Salvataggio...');
+  try{
+    await jbPut(JB_TICKETS,{tickets});
+    setSyncBadge('ok','Salvato');
+  }catch(e){
+    console.error('Salvataggio tickets fallito',e);
+    setSyncBadge('err','Errore salvataggio');
+    showNotif('⚠️ Errore salvataggio','Controlla la connessione internet',true);
+  }
+}
+async function saveUsers(){
+  try{ await jbPut(JB_USERS,{users}); }
+  catch(e){ console.error('Salvataggio utenti fallito',e); }
+}
+
+// AUTH
+function switchTab(t){
+  document.getElementById('tabLogin').classList.toggle('active',t==='login');
+  document.getElementById('tabReg').classList.toggle('active',t==='reg');
+  document.getElementById('panelLogin').style.display=t==='login'?'flex':'none';
+  document.getElementById('panelReg').style.display=t==='reg'?'flex':'none';
+  document.getElementById('li_err').textContent='';
+  document.getElementById('re_err').textContent='';
+}
+async function doLogin(){
+  const email=document.getElementById('li_email').value.trim().toLowerCase();
+  const pass=document.getElementById('li_pass').value;
+  document.getElementById('li_err').textContent='Verifica credenziali...';
+  await loadAll(); // ricarica sempre da cloud al login
+  const u=users.find(u=>u.email===email&&u.pass===btoa(pass));
+  if(!u){document.getElementById('li_err').textContent='Email o password errati.';return;}
+  currentUser=u; localStorage.setItem(SESSION_KEY,u.email); showApp();
+}
+async function doRegister(){
+  const nome=document.getElementById('re_nome').value.trim();
+  const email=document.getElementById('re_email').value.trim().toLowerCase();
+  const pass=document.getElementById('re_pass').value;
+  const store=document.getElementById('re_store').value;
+  if(!nome){document.getElementById('re_err').textContent='Inserisci il tuo nome.';return;}
+  if(!/\S+@\S+\.\S+/.test(email)){document.getElementById('re_err').textContent='Email non valida.';return;}
+  if(pass.length<4){document.getElementById('re_err').textContent='Password min. 4 caratteri.';return;}
+  if(users.find(u=>u.email===email)){document.getElementById('re_err').textContent='Email già registrata.';return;}
+  const u={nome,email,pass:btoa(pass),store};
+  users.push(u);
+  document.getElementById('re_err').textContent='Registrazione in corso...';
+  await saveUsers();
+  currentUser=u;
+  localStorage.setItem(SESSION_KEY,u.email); showApp();
+}
+function doLogout(){
+  currentUser=null; localStorage.removeItem(SESSION_KEY);
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('li_email').value='';
+  document.getElementById('li_pass').value='';
+  document.getElementById('li_err').textContent='';
+}
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  document.getElementById('userNameChip').textContent=currentUser.nome.split(' ')[0];
+  document.getElementById('userAvatar').textContent=currentUser.nome.charAt(0).toUpperCase();
+  document.getElementById('globalEmail').value=localStorage.getItem(EMAIL_KEY)||currentUser.email;
+  if(currentUser.store){
+    const btn=document.querySelector(`[data-store="${currentUser.store}"]`);
+    if(btn) setStoreFilter(currentUser.store,btn);
+  }
+  renderStats(); renderTable(); checkSolleciti();
+}
+
+// STATS
+const STATI=['APERTO','IN ATTESA','RIMBORSO','CHIUSO','RISOLTO'];
+const S_COLORS={APERTO:'var(--aperto)','IN ATTESA':'var(--attesa)',RIMBORSO:'var(--rimborso)',CHIUSO:'var(--chiuso)',RISOLTO:'var(--risolto)'};
+const S_LABEL={APERTO:'Aperti','IN ATTESA':'In Attesa',RIMBORSO:'Rimborso',CHIUSO:'Chiusi',RISOLTO:'Risolti'};
+function renderStats(){
+  const vis=filteredTickets(); const counts={};
+  STATI.forEach(s=>counts[s]=0);
+  vis.forEach(t=>{if(counts[t.stato]!==undefined)counts[t.stato]++;});
+  document.getElementById('statsBar').innerHTML=
+    `<div class="stat-card"><div class="stat-dot" style="background:#fff"></div><div><div class="stat-label">Totale</div><div class="stat-value" style="color:var(--text)">${vis.length}</div></div></div>`+
+    STATI.map(s=>`<div class="stat-card"><div class="stat-dot" style="background:${S_COLORS[s]}"></div><div><div class="stat-label">${S_LABEL[s]}</div><div class="stat-value" style="color:${S_COLORS[s]}">${counts[s]}</div></div></div>`).join('');
+}
+
+// FILTERS
+function setStoreFilter(f,btn){
+  currentStoreFilter=f;
+  document.querySelectorAll('[data-store]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderStats(); renderTable();
+}
+function setStateFilter(f,btn){
+  currentStateFilter=f;
+  document.querySelectorAll('[data-state]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderStats(); renderTable();
+}
+function filteredTickets(){
+  const search=(document.getElementById('searchInput')?.value||'').toLowerCase();
+  return tickets.filter(t=>{
+    const mStore=currentStoreFilter==='TUTTI'||t.store===currentStoreFilter;
+    const mState=currentStateFilter==='TUTTI'||t.stato===currentStateFilter;
+    const mSearch=!search||(t.numero||'').toLowerCase().includes(search)||
+      (t.problema||'').toLowerCase().includes(search)||
+      (t.spedizione||'').toLowerCase().includes(search)||
+      (t.nomeCliente||'').toLowerCase().includes(search);
+    return mStore&&mState&&mSearch;
+  });
+}
+
+// TABLE
+function renderTable(){
+  const today=todayStr(); const filtered=filteredTickets();
+  const tbody=document.getElementById('tableBody');
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="11"><div class="empty-state"><div class="icon">📭</div><h3>Nessun ticket trovato</h3></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=filtered.map(t=>{
+    const ri=tickets.indexOf(t);
+    const sc=getSollecitoClass(t.dataSollecito,today);
+    const rc=t.dataSollecito&&t.dataSollecito<today?'urgent-row':t.dataSollecito===today?'highlight-row':'';
+    const sk=(t.stato||'').replace(/\s/g,'');
+    const sc2=t.store===('STORE 802')?'store-802':t.store==='STORE 529'?'store-529':'';
+    const storeChip=t.store?`<span class="store-chip ${sc2}">${t.store}</span>`:'—';
+    const solText=t.dataSollecito?(sc==='sollecito-urgente'?'⚠ ':sc==='sollecito-oggi'?'🔔 ':'')+fmt(t.dataSollecito):'—';
+    return `<tr class="${rc}">
+      <td class="ticket-num">${esc(t.numero)}</td>
+      <td><div class="client-name">${esc(t.nomeCliente)||'—'}</div><div style="font-size:10px;color:var(--text2)">${esc(t.emailCliente)||''}</div></td>
+      <td><div class="text-cell" title="${esc(t.problema)}">${esc(t.problema)}</div></td>
+      <td>${esc(t.spedizione)||'—'}</td>
+      <td>${storeChip}</td>
+      <td><span class="badge badge-${sk}">${t.stato}</span></td>
+      <td class="date-cell">${fmt(t.dataApertura)}</td>
+      <td><span class="${sc}">${solText}</span></td>
+      <td class="date-cell">${t.oraSollecito||'—'}</td>
+      <td class="date-cell">${fmt(t.dataChiusura)}</td>
+      <td class="actions-cell">
+        <button class="btn btn-secondary btn-sm" onclick="editTicket(${ri})" title="Modifica">✎</button>
+        <button class="btn btn-forward btn-sm" onclick="openForwardModal(${ri})">✉ Inoltra</button>
+        ${t.email&&t.dataSollecito?`<button class="btn btn-secondary btn-sm" onclick="sendSollecito(${ri})" title="Sollecito">🔔</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deleteTicket(${ri})">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function getSollecitoClass(d,today){if(!d)return '';if(d<today)return 'sollecito-urgente';if(d===today)return 'sollecito-oggi';return 'sollecito-futuro';}
+
+// MODAL TICKET
+function openTicketModal(idx=-1){
+  editIndex=idx;
+  if(idx>=0){
+    const t=tickets[idx];
+    document.getElementById('ticketModalTitle').textContent='Modifica Ticket';
+    document.getElementById('f_numero').value=t.numero||'';
+    document.getElementById('f_spedizione').value=t.spedizione||'';
+    document.getElementById('f_store').value=t.store||'';
+    document.getElementById('f_problema').value=t.problema||'';
+    document.getElementById('f_stato').value=t.stato||'APERTO';
+    document.getElementById('f_nomeCliente').value=t.nomeCliente||'';
+    document.getElementById('f_emailCliente').value=t.emailCliente||'';
+    document.getElementById('f_dataApertura').value=t.dataApertura||'';
+    document.getElementById('f_dataSollecito').value=t.dataSollecito||'';
+    document.getElementById('f_oraSollecito').value=t.oraSollecito||'';
+    document.getElementById('f_dataChiusura').value=t.dataChiusura||'';
+    document.getElementById('f_email').value=t.email||'';
+    document.getElementById('f_noteChiusura').value=t.noteChiusura||'';
+  } else {
+    document.getElementById('ticketModalTitle').textContent='Nuovo Ticket';
+    ['f_numero','f_spedizione','f_problema','f_nomeCliente','f_emailCliente','f_dataSollecito','f_oraSollecito','f_dataChiusura','f_noteChiusura'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f_stato').value='APERTO';
+    document.getElementById('f_store').value=currentUser?.store||'';
+    document.getElementById('f_dataApertura').valueAsDate=new Date();
+    document.getElementById('f_email').value=localStorage.getItem(EMAIL_KEY)||currentUser?.email||'';
+  }
+  document.getElementById('ticketModal').style.display='flex';
+}
+function closeTicketModal(){document.getElementById('ticketModal').style.display='none';}
+function editTicket(idx){openTicketModal(idx);}
+async function saveTicket(){
+  const numero=document.getElementById('f_numero').value.trim();
+  const problema=document.getElementById('f_problema').value.trim();
+  if(!numero){alert('Inserisci il numero del ticket!');return;}
+  if(!problema){alert('Inserisci la problematica!');return;}
+  const t={numero,spedizione:document.getElementById('f_spedizione').value.trim(),
+    store:document.getElementById('f_store').value,problema,stato:document.getElementById('f_stato').value,
+    nomeCliente:document.getElementById('f_nomeCliente').value.trim(),
+    emailCliente:document.getElementById('f_emailCliente').value.trim(),
+    dataApertura:document.getElementById('f_dataApertura').value,
+    dataSollecito:document.getElementById('f_dataSollecito').value,
+    oraSollecito:document.getElementById('f_oraSollecito').value,
+    dataChiusura:document.getElementById('f_dataChiusura').value,
+    email:document.getElementById('f_email').value.trim(),
+    noteChiusura:document.getElementById('f_noteChiusura').value.trim(),
+    createdBy:currentUser?.email};
+  if(editIndex>=0)tickets[editIndex]=t; else tickets.unshift(t);
+  renderStats();renderTable();closeTicketModal();
+  showNotif(`💾 Salvataggio in corso...`,`Ticket ${t.numero}`,false);
+  await saveTickets();
+  showNotif(`✅ Ticket ${t.numero} salvato`,`Stato: ${t.stato} — sincronizzato`,false);
+}
+async function deleteTicket(idx){
+  if(!confirm(`Eliminare il ticket ${tickets[idx].numero}?`))return;
+  tickets.splice(idx,1);renderStats();renderTable();await saveTickets();
+}
+
+// INOLTRA MODAL
+function buildEmailBody(t,extra){
+  return `Gentile Team,\n\n`+
+    (extra?extra.trim()+'\n\n--- Informazioni Ticket ---\n\n':'--- Informazioni Ticket ---\n\n')+
+    `N° Ticket:       ${t.numero||'—'}\n`+
+    `N° Spedizione:   ${t.spedizione||'—'}\n`+
+    `Store:           ${t.store||'—'}\n`+
+    `Stato:           ${t.stato||'—'}\n`+
+    `Cliente:         ${t.nomeCliente||'—'}\n`+
+    `Email Cliente:   ${t.emailCliente||'—'}\n`+
+    `Data Apertura:   ${fmt(t.dataApertura)}\n`+
+    `Data Sollecito:  ${fmt(t.dataSollecito)}${t.oraSollecito?' alle '+t.oraSollecito:''}\n\n`+
+    `Problematica:\n${t.problema||'—'}\n\n`+
+    (t.noteChiusura?`Note Chiusura:\n${t.noteChiusura}\n\n`:'')+
+    `Cordiali saluti\n${currentUser?.nome||''}`;
+}
+function openForwardModal(idx){
+  forwardTicketIdx=idx;
+  const t=tickets[idx];
+  document.getElementById('fw_to').value='';
+  document.getElementById('fw_extra').value='';
+  document.getElementById('fw_subject_preview').value=`[TICKET ${t.numero}] ${t.stato} — ${(t.problema||'').substring(0,50)}`;
+  document.getElementById('fw_preview').textContent=buildEmailBody(t,'');
+  document.getElementById('forwardModal').style.display='flex';
+}
+function updateForwardPreview(){
+  if(forwardTicketIdx<0)return;
+  document.getElementById('fw_preview').textContent=buildEmailBody(tickets[forwardTicketIdx],document.getElementById('fw_extra').value);
+}
+function closeForwardModal(){document.getElementById('forwardModal').style.display='none';}
+function doForward(){
+  const to=document.getElementById('fw_to').value.trim();
+  if(!to){alert('Inserisci un indirizzo email destinatario!');return;}
+  const t=tickets[forwardTicketIdx];
+  const extra=document.getElementById('fw_extra').value;
+  const subj=encodeURIComponent(`[TICKET ${t.numero}] ${t.stato} — ${(t.problema||'').substring(0,50)}`);
+  const body=encodeURIComponent(buildEmailBody(t,extra));
+  const from=currentUser?.email||'';
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subj}&body=${body}${from?'&from='+encodeURIComponent(from):''}`, '_blank');
+  closeForwardModal();
+}
+
+// SOLLECITO
+function sendSollecito(idx){
+  const t=tickets[idx];
+  const to=t.email||localStorage.getItem(EMAIL_KEY)||'';
+  const from=currentUser?.email||'';
+  const subj=encodeURIComponent(`[SOLLECITO] Ticket ${t.numero} — ${t.stato}`);
+  const body=encodeURIComponent(`Gentile Team,\n\nSollecito per il ticket N° ${t.numero}.\n\nProblematica: ${t.problema}\nN° Spedizione: ${t.spedizione||'N/D'}\nStato: ${t.stato}\nData apertura: ${fmt(t.dataApertura)}\n\nSi prega di aggiornare lo stato il prima possibile.\n\nCordiali saluti\n${currentUser?.nome||''}`);
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subj}&body=${body}${from?'&from='+encodeURIComponent(from):''}`, '_blank');
+}
+
+// EMAIL CONFIG
+function openEmailConfig(){document.getElementById('emailModal').style.display='flex';}
+function closeEmailConfig(){document.getElementById('emailModal').style.display='none';}
+async function saveEmailConfig(){
+  localStorage.setItem(EMAIL_KEY,document.getElementById('globalEmail').value.trim());
+  closeEmailConfig();showNotif('✅ Email salvata','Configurazione aggiornata',false);
+}
+// Auto-refresh ogni 30s per sincronizzare con altri utenti
+setInterval(async()=>{
+  if(!currentUser) return;
+  try{
+    const td=await jbGet(JB_TICKETS); 
+    const newTickets=td.tickets||[];
+    // Aggiorna solo se ci sono cambiamenti
+    if(JSON.stringify(newTickets)!==JSON.stringify(tickets)){
+      tickets=newTickets;
+      renderStats();renderTable();
+      showNotif('🔄 Dati aggiornati','Nuovi ticket sincronizzati dal server',false);
+    }
+  }catch(e){}
+}, 30000);
+
+// SOLLECITI AUTOMATICI
+let _sollecitoTimers=[];
+// ── CAMPANELLA (Web Audio API) ─────────────────────────────────────────────
+function suonaCampanella(urgente=false){
+  try {
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const play=(freq,start,dur,gain=0.5)=>{
+      const osc=ctx.createOscillator();
+      const g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='sine';
+      osc.frequency.setValueAtTime(freq,ctx.currentTime+start);
+      g.gain.setValueAtTime(0,ctx.currentTime+start);
+      g.gain.linearRampToValueAtTime(gain,ctx.currentTime+start+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      osc.start(ctx.currentTime+start);
+      osc.stop(ctx.currentTime+start+dur);
+    };
+    if(urgente){
+      // Allarme urgente - tre rintocchi veloci
+      play(880,0,0.25,0.6); play(880,0.3,0.25,0.6); play(880,0.6,0.35,0.6);
+      play(660,0.05,0.2,0.3); play(660,0.35,0.2,0.3); play(660,0.65,0.25,0.3);
+    } else {
+      // Campanella classica - ding dong
+      play(1046,0,0.5,0.5);   // DO
+      play(880,0.1,0.5,0.3);  // LA (armonia)
+      play(1318,0.5,0.6,0.45); // MI alto
+      play(1046,0.6,0.6,0.25);
+      play(987,1.1,0.8,0.35);  // SI
+      play(784,1.2,0.8,0.2);
+    }
+  } catch(e){ console.warn('Audio non disponibile',e); }
+}
+
+// ── VIBRAZIONE ──────────────────────────────────────────────────────────────
+function vibra(urgente=false){
+  if('vibrate' in navigator){
+    navigator.vibrate(urgente?[200,100,200,100,400]:[150,80,150]);
+  }
+}
+
+// ── NOTIFICA DI SISTEMA (browser) ───────────────────────────────────────────
+function notificaBrowser(title,body){
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification(title,{body,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%23f0a500"/><text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-size="18">🔔</text></svg>'});
+  }
+}
+
+// ── INVIO EMAIL AUTOMATICO (Gmail apre in background tab) ───────────────────
+function inviaEmailAutomatica(t){
+  const to=t.email||localStorage.getItem(EMAIL_KEY)||currentUser?.email||'';
+  if(!to) return;
+  const from=currentUser?.email||'';
+  const ora=t.oraSollecito?` alle ${t.oraSollecito}`:'';
+  const subj=encodeURIComponent(`[SOLLECITO AUTOMATICO] Aggiorna ticket ${t.numero} — ${t.stato}`);
+  const bodyText=
+    `Buongiorno ${currentUser?.nome||'Team'},\n\n`+
+    `Questo è un promemoria automatico da TicketDesk.\n\n`+
+    `⚠️  Il ticket ${t.numero} richiede aggiornamento${ora}.\n\n`+
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`+
+    `N° Ticket:     ${t.numero}\n`+
+    `Cliente:       ${t.nomeCliente||'—'}\n`+
+    `N° Spedizione: ${t.spedizione||'—'}\n`+
+    `Store:         ${t.store||'—'}\n`+
+    `Stato attuale: ${t.stato}\n`+
+    `Data apertura: ${fmt(t.dataApertura)}\n\n`+
+    `Problematica:\n${t.problema||'—'}\n\n`+
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`+
+    `Per favore accedi a TicketDesk e aggiorna lo stato del ticket.\n\n`+
+    `Cordiali saluti\nTicketDesk — Sistema automatico`;
+  const body=encodeURIComponent(bodyText);
+  const gmailUrl=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subj}&body=${body}${from?'&from='+encodeURIComponent(from):''}`;
+  // Apri in tab nascosta (o nuova)
+  const w=window.open(gmailUrl,'_blank');
+  // Su mobile/popup bloccati: fallback su setTimeout per dare tempo al browser
+  if(!w){ setTimeout(()=>window.open(gmailUrl,'_blank'),500); }
+}
+
+// ── ALLARME ATTIVO ───────────────────────────────────────────────────────────
+let _alarmTicketIdx = -1;
+let _alarmAudioCtx  = null;
+let _alarmAudioLoop = null;
+
+// ── FIRE SOLLECITO (suono + vibra + modal + email) ────────────────────────────
+function fireSollecito(t, urgente=false){
+  // Cerca l'indice reale del ticket
+  _alarmTicketIdx = tickets.findIndex(tk=>tk.numero===t.numero);
+
+  // Suona e vibra
+  suonaCampanella(urgente);
+  vibra(urgente);
+  notificaBrowser(
+    urgente?`⚠️ SOLLECITO SCADUTO: ${t.numero}`:`🔔 Sollecito: ${t.numero}`,
+    `${t.nomeCliente||''} — ${t.stato} — ${(t.problema||'').substring(0,60)}`
+  );
+
+  // Avvia loop audio ogni 4 secondi finché non si disattiva
+  _alarmAudioLoop = setInterval(()=>suonaCampanella(urgente), 4000);
+
+  // Mostra modal allarme
+  const box = document.querySelector('.alarm-box');
+  const pulse = document.querySelector('.alarm-pulse');
+  const icon  = document.getElementById('alarmIcon');
+  const title = document.getElementById('alarmTitle');
+  const num   = document.getElementById('alarmTicketNum');
+  const body  = document.getElementById('alarmBody');
+
+  if(urgente){
+    box.classList.add('urgente');
+    pulse.classList.add('urgente');
+    pulse.style.animation='pulseRed 1s ease-in-out infinite';
+    icon.textContent='⚠️';
+    title.textContent='Sollecito SCADUTO!';
+  } else {
+    box.classList.remove('urgente');
+    pulse.classList.remove('urgente');
+    pulse.style.animation='pulse 1s ease-in-out infinite';
+    icon.textContent='🔔';
+    title.textContent='Sollecito Ticket';
+  }
+
+  num.textContent = t.numero;
+  num.className   = 'alarm-ticket'+(urgente?' urgente':'');
+  body.innerHTML  =
+    `<b>${t.nomeCliente||'—'}</b><br>`+
+    `Stato: <b>${t.stato}</b>${t.oraSollecito?' | Ore: <b>'+t.oraSollecito+'</b>':''}<br>`+
+    `Spedizione: ${t.spedizione||'—'}<br>`+
+    `Store: ${t.store||'—'}<br><br>`+
+    `${(t.problema||'').substring(0,120)}${(t.problema||'').length>120?'...':''}`;
+
+  document.getElementById('alarmModal').style.display='flex';
+
+  // Invia email automatica
+  inviaEmailAutomatica(t);
+}
+
+// ── DISATTIVA ALLARME ─────────────────────────────────────────────────────────
+async function disattivaAllarme(){
+  // Ferma audio loop
+  if(_alarmAudioLoop){ clearInterval(_alarmAudioLoop); _alarmAudioLoop=null; }
+  vibra(false); // stop vibrazione
+
+  // Azzera dataSollecito e oraSollecito sul ticket (scatta una volta sola)
+  if(_alarmTicketIdx>=0){
+    tickets[_alarmTicketIdx].dataSollecito='';
+    tickets[_alarmTicketIdx].oraSollecito='';
+    await saveTickets();
+    renderStats(); renderTable(); checkSolleciti();
+  }
+
+  document.getElementById('alarmModal').style.display='none';
+  showNotif('🔕 Allarme disattivato','Il sollecito è stato rimosso dal ticket',false);
+}
+
+// ── REIMPOSTA NOTIFICA ────────────────────────────────────────────────────────
+function reimpostaNotifica(){
+  // Ferma audio loop ma lascia modal aperto
+  if(_alarmAudioLoop){ clearInterval(_alarmAudioLoop); _alarmAudioLoop=null; }
+  document.getElementById('alarmModal').style.display='none';
+
+  // Pre-popola modal reimposta
+  const t = _alarmTicketIdx>=0 ? tickets[_alarmTicketIdx] : null;
+  if(!t) return;
+  document.getElementById('reimpostaInfo').textContent=`Ticket: ${t.numero} — ${t.nomeCliente||''}`;
+  document.getElementById('re_data').value='';
+  document.getElementById('re_ora').value='';
+  document.getElementById('reimpostaModal').style.display='flex';
+}
+
+async function salvaReimposta(){
+  const newData = document.getElementById('re_data').value;
+  const newOra  = document.getElementById('re_ora').value;
+  if(!newData){ alert('Inserisci la nuova data!'); return; }
+  if(!newOra)  { alert('Inserisci il nuovo orario!'); return; }
+
+  if(_alarmTicketIdx>=0){
+    tickets[_alarmTicketIdx].dataSollecito = newData;
+    tickets[_alarmTicketIdx].oraSollecito  = newOra;
+    await saveTickets();
+    renderStats(); renderTable(); checkSolleciti();
+  }
+
+  document.getElementById('reimpostaModal').style.display='none';
+  showNotif('✅ Notifica reimpostata',`Nuovo sollecito il ${fmt(newData)} alle ${newOra}`,false);
+}
+
+// ── RICHIEDI PERMESSO NOTIFICHE BROWSER ─────────────────────────────────────
+function richiediPermessoNotifiche(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+}
+
+// ── CHECK SOLLECITI ───────────────────────────────────────────────────────────
+// Track which tickets have already fired this session so scaduti don't spam
+const _firedThisSession = new Set();
+
+function checkSolleciti(){
+  _sollecitoTimers.forEach(clearTimeout);
+  _sollecitoTimers=[];
+  richiediPermessoNotifiche();
+
+  const now=new Date();
+  const today=todayStr();
+
+  // Ticket scaduti (data < oggi)
+  const scaduti=tickets.filter(t=>
+    t.dataSollecito && t.dataSollecito<today &&
+    t.stato!=='CHIUSO' && t.stato!=='RISOLTO'
+  );
+  if(scaduti.length){
+    const b=document.getElementById('todayBanner');
+    b.style.display='flex';
+    b.innerHTML=`⚠️ <strong>${scaduti.length} ticket scaduti</strong>: ${scaduti.map(t=>`<strong>${t.numero}</strong>${t.oraSollecito?' ('+t.oraSollecito+')':''}`).join(', ')}`;
+    scaduti.forEach((t,i)=>{
+      if(_firedThisSession.has(t.numero)) return;
+      _firedThisSession.add(t.numero);
+      setTimeout(()=>fireSollecito(t,true), 800+i*600);
+    });
+  }
+
+  // Ticket di oggi
+  const oggi=tickets.filter(t=>
+    t.dataSollecito===today &&
+    t.stato!=='CHIUSO' && t.stato!=='RISOLTO'
+  );
+
+  oggi.forEach((t,i)=>{
+    const ora=t.oraSollecito||null;
+    if(!ora){
+      if(!_firedThisSession.has(t.numero)){
+        _firedThisSession.add(t.numero);
+        setTimeout(()=>fireSollecito(t,false), 800+i*600);
+      }
+      updateTodayBanner(oggi);
+      return;
+    }
+    const [hh,mm]=ora.split(':').map(Number);
+    const target=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm,0,0);
+    const delay=target-now;
+    if(delay<0){
+      // Orario già passato oggi
+      if(!_firedThisSession.has(t.numero)){
+        _firedThisSession.add(t.numero);
+        setTimeout(()=>fireSollecito(t,true), 800+i*600);
+      }
+      updateTodayBanner(oggi);
+    } else {
+      // Programma esattamente all'orario scelto
+      const tid=setTimeout(()=>{
+        if(!_firedThisSession.has(t.numero)){
+          _firedThisSession.add(t.numero);
+          fireSollecito(t,false);
+        }
+      }, delay);
+      _sollecitoTimers.push(tid);
+      updateTodayBanner(oggi);
+    }
+  });
+}
+
+function updateTodayBanner(oggiTickets){
+  const b=document.getElementById('todayBanner');
+  if(!oggiTickets.length){b.style.display='none';return;}
+  b.style.display='flex';
+  b.innerHTML=`🔔 <strong>${oggiTickets.length} ticket</strong> con sollecito oggi: ${oggiTickets.map(t=>`<strong>${t.numero}</strong>${t.oraSollecito?' alle <strong>'+t.oraSollecito+'</strong>':''}`).join(', ')}`;
+}
+
+// Ricontrolla ogni minuto
+setInterval(()=>{ if(currentUser) checkSolleciti(); }, 60000);
+
+// NOTIFICHE
+function showNotif(title,body,urgent=false){
+  const c=document.getElementById('notifContainer');
+  const d=document.createElement('div');
+  d.className='notif'+(urgent?' urgente':'');
+  d.innerHTML=`<div class="notif-title">${title}<button class="notif-close-btn" onclick="this.closest('.notif').remove()">✕</button></div><div class="notif-body">${body}</div>`;
+  c.appendChild(d);
+  setTimeout(()=>{if(d.parentNode)d.remove();},9000);
+}
+
+// ── SYNC HELPERS ─────────────────────────────────────────────────────────────
+function setSyncBadge(state, msg){
+  const b=document.getElementById('syncBadge');
+  if(!b) return;
+  b.className='sync-badge '+(state==='ok'?'sync-ok':state==='err'?'sync-err':'sync-loading');
+  b.textContent=state==='ok'?`☁ ${msg||'Sincronizzato'}`:state==='err'?`⚠ ${msg||'Errore sync'}`:`⟳ ${msg||'Sincronizzazione...'}`;
+}
+async function manualRefresh(){
+  setSyncBadge('loading','Aggiornamento...');
+  try{
+    const td=await jbGet(JB_TICKETS);
+    tickets=td.tickets||[];
+    renderStats(); renderTable(); checkSolleciti();
+    setSyncBadge('ok','Aggiornato');
+    showNotif('🔄 Dati aggiornati','Ticket sincronizzati dal cloud',false);
+  }catch(e){
+    setSyncBadge('err','Errore connessione');
+    showNotif('⚠️ Errore connessione','Impossibile raggiungere il database',true);
+  }
+}
+
+// EXPORT / IMPORT CSV
+function exportCSV(){
+  if(!tickets.length){alert('Nessun ticket da esportare');return;}
+  const hdr=['N.Ticket','Nome Cliente','Email Cliente','Problematica','N.Spedizione','Store','Stato','Data Apertura','Data Sollecito','Ora Sollecito','Data Chiusura','Note Chiusura','Email Notifica'];
+  const rows=tickets.map(t=>[cv(t.numero),cv(t.nomeCliente),cv(t.emailCliente),cv(t.problema),cv(t.spedizione),cv(t.store),cv(t.stato),cv(t.dataApertura),cv(t.dataSollecito),cv(t.oraSollecito),cv(t.dataChiusura),cv(t.noteChiusura),cv(t.email)]);
+  const csv=[hdr,...rows].map(r=>r.join(';')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`ticket_export_${todayStr()}.csv`; a.click();
+}
+function cv(v){return `"${(v||'').replace(/"/g,'""')}"}`;}
+function importCSV(){document.getElementById('csvImporter').click();}
+async function handleCSVImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const lines=ev.target.result.replace(/^\ufeff/,'').split('\n').filter(l=>l.trim());
+      const imp=[];
+      for(let i=1;i<lines.length;i++){
+        const c=lines[i].split(';').map(x=>x.replace(/^"|"$/g,'').replace(/""/g,'"'));
+        if(!c[0])continue;
+        imp.push({numero:c[0],nomeCliente:c[1],emailCliente:c[2],problema:c[3],spedizione:c[4],store:c[5],stato:c[6]||'APERTO',dataApertura:c[7],dataSollecito:c[8],oraSollecito:c[9],dataChiusura:c[10],noteChiusura:c[11],email:c[12]});
+      }
+      if(!imp.length){alert('Nessun ticket nel CSV');return;}
+      if(confirm(`Importare ${imp.length} ticket?\nOK = aggiungi, Annulla = sostituisci`)){tickets=[...imp,...tickets];}
+      else{if(!confirm('Sostituire tutti i ticket esistenti?'))return;tickets=imp;}
+      renderStats();renderTable();
+      await saveTickets();
+      showNotif('✅ Importazione completata',`${imp.length} ticket importati e sincronizzati`,false);
+    }catch(err){alert('Errore CSV: '+err.message);}
+  };
+  reader.readAsText(file,'UTF-8'); e.target.value='';
+}
+
+// UTILITY
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmt(s){if(!s)return '—';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
