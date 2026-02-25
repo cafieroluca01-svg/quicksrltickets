@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TicketDesk</title>
+<title>QuickSRL Tickets</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -172,8 +172,8 @@
 <!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">TICKET<span>DESK</span></div>
-    <div class="login-sub">Sistema di gestione ticket</div>
+    <div class="login-logo">QUICK<span>TICKETS</span></div>
+    <div class="login-sub">Quick SRL — Gestione Ticket</div>
     <div class="login-tabs">
       <div class="login-tab active" id="tabLogin" onclick="switchTab('login')">Accedi</div>
       <div class="login-tab" id="tabReg" onclick="switchTab('reg')">Registrati</div>
@@ -205,7 +205,7 @@
 <!-- APP -->
 <div id="appShell" style="display:none">
   <header>
-    <div class="logo">TICKET<span>DESK</span></div>
+    <div class="logo">QUICK<span>TICKETS</span></div>
     <div class="header-right">
       <span class="sync-badge sync-ok" id="syncBadge" title="Stato sincronizzazione">☁ Sincronizzato</span>
       <button class="btn btn-secondary" onclick="manualRefresh()" title="Ricarica dati dal cloud">↺</button>
@@ -477,6 +477,32 @@
   </div>
 </div>
 
+<!-- MODAL PERMESSI (mostrato una volta sola) -->
+<div id="permModal" style="display:none">
+  <div class="modal-overlay">
+    <div class="modal modal-sm" style="text-align:center">
+      <div class="modal-body" style="padding:32px 28px">
+        <div style="font-size:44px;margin-bottom:12px">🔐</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:8px">Autorizzazioni richieste</div>
+        <div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.8;margin-bottom:24px">
+          QuickSRL Tickets ha bisogno di queste autorizzazioni<br>
+          per funzionare correttamente.<br><br>
+          <span style="color:var(--accent)">🔔 Notifiche</span> — avvisi pop-up e notifiche di sistema<br>
+          <span style="color:var(--accent)">🔊 Audio</span> — suono campanella al sollecito<br>
+          <span style="color:var(--accent)">📳 Vibrazione</span> — su dispositivi mobili<br><br>
+          Verrà chiesto <strong>una volta sola</strong>.
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px" onclick="concediPermessi()">
+          ✅ Concedi tutte le autorizzazioni
+        </button>
+        <button class="btn btn-secondary" style="width:100%;padding:11px;font-size:12px;margin-top:8px" onclick="saltaPermessi()">
+          Salta per ora
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="csvImporter" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
 
 <script>
@@ -516,7 +542,7 @@ function showLoading(on){
     el=document.createElement('div');
     el.id='loadingOverlay';
     el.style.cssText='position:fixed;inset:0;background:#0d0f14;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Syne,sans-serif;';
-    el.innerHTML='<div style="font-size:28px;font-weight:800;color:#e8eaf0">TICKET<span style="color:#f0a500">DESK</span></div><div style="color:#7a8099;font-size:13px;font-family:DM Mono,monospace" id="loadingMsg">Connessione al database...</div><div class="spinner"></div>';
+    el.innerHTML='<div style="font-size:28px;font-weight:800;color:#e8eaf0">QUICK<span style="color:#f0a500">TICKETS</span></div><div style="color:#7a8099;font-size:13px;font-family:DM Mono,monospace" id="loadingMsg">Connessione al database...</div><div class="spinner"></div>';
     document.body.appendChild(el);
   }
   el.style.display=on?'flex':'none';
@@ -600,6 +626,8 @@ function showApp(){
     if(btn) setStoreFilter(currentUser.store,btn);
   }
   renderStats(); renderTable(); checkSolleciti();
+  // Chiedi permessi una volta sola
+  mostraModalPermessiSeNecessario();
 }
 
 // STATS
@@ -866,7 +894,7 @@ function inviaEmailAutomatica(t){
   const subj=encodeURIComponent(`[SOLLECITO AUTOMATICO] Aggiorna ticket ${t.numero} — ${t.stato}`);
   const bodyText=
     `Buongiorno ${currentUser?.nome||'Team'},\n\n`+
-    `Questo è un promemoria automatico da TicketDesk.\n\n`+
+    `Questo è un promemoria automatico da QuickSRL Tickets.\n\n`+
     `⚠️  Il ticket ${t.numero} richiede aggiornamento${ora}.\n\n`+
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`+
     `N° Ticket:     ${t.numero}\n`+
@@ -877,8 +905,8 @@ function inviaEmailAutomatica(t){
     `Data apertura: ${fmt(t.dataApertura)}\n\n`+
     `Problematica:\n${t.problema||'—'}\n\n`+
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`+
-    `Per favore accedi a TicketDesk e aggiorna lo stato del ticket.\n\n`+
-    `Cordiali saluti\nTicketDesk — Sistema automatico`;
+    `Per favore accedi a QuickSRL Tickets e aggiorna lo stato del ticket.\n\n`+
+    `Cordiali saluti\nQuickSRL Tickets — Sistema automatico`;
   const body=encodeURIComponent(bodyText);
   const gmailUrl=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subj}&body=${body}${from?'&from='+encodeURIComponent(from):''}`;
   // Apri in tab nascosta (o nuova)
@@ -996,10 +1024,54 @@ async function salvaReimposta(){
 }
 
 // ── RICHIEDI PERMESSO NOTIFICHE BROWSER ─────────────────────────────────────
-function richiediPermessoNotifiche(){
+// ── SISTEMA PERMESSI UNIFICATO (richiesto una volta sola) ───────────────────
+const PERM_KEY = 'quicksrl_perms_granted';
+let _audioCtxUnlocked = false;
+
+async function concediPermessi(){
+  document.getElementById('permModal').style.display='none';
+
+  // 1. Notifiche browser
   if('Notification' in window && Notification.permission==='default'){
-    Notification.requestPermission();
+    await Notification.requestPermission();
   }
+
+  // 2. Sblocca AudioContext con un gesto utente (click già avvenuto)
+  try{
+    const ctx = new(window.AudioContext||window.webkitAudioContext)();
+    // Suona silenzio per sbloccare
+    const osc=ctx.createOscillator();
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime+0.001);
+    _audioCtxUnlocked=true;
+    console.log('AudioContext sbloccato');
+  }catch(e){ console.warn('Audio unlock fallito',e); }
+
+  // 3. Test vibrazione
+  if('vibrate' in navigator) navigator.vibrate(100);
+
+  // 4. Salva che i permessi sono stati concessi
+  localStorage.setItem(PERM_KEY,'1');
+
+  showNotif('✅ Autorizzazioni concesse','Notifiche, audio e vibrazione attivi',false);
+}
+
+function saltaPermessi(){
+  document.getElementById('permModal').style.display='none';
+  localStorage.setItem(PERM_KEY,'skipped');
+}
+
+function richiediPermessoNotifiche(){
+  // Ora è un no-op — i permessi vengono chiesti tutti insieme in concediPermessi()
+}
+
+function mostraModalPermessiSeNecessario(){
+  const stato = localStorage.getItem(PERM_KEY);
+  if(stato==='1' || stato==='skipped') return; // già gestito
+  // Mostra la modale dei permessi
+  document.getElementById('permModal').style.display='flex';
 }
 
 // ── CHECK SOLLECITI ───────────────────────────────────────────────────────────
